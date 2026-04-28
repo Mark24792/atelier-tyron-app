@@ -1,0 +1,21 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "155b7606b434f4003fdd811236a1b064"
+name = "Atelier Virtual AR Try-On"
+application_url = "https://atelier-tyron-app-production.up.railway.app"
+embedded = true
+
+[webhooks]
+api_version = "2026-04"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,read_themes,write_products,write_themes"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://atelier-tyron-app-production.up.railway.app/auth/callback",
+  "https://atelier-tyron-app-production.up.railway.app/auth/shopify/callback"
+]
