@@ -1,0 +1,74 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Shopify session storage (required by shopify-app-remix)
+model Session {
+  id          String    @id
+  shop        String
+  state       String
+  isOnline    Boolean   @default(false)
+  scope       String?
+  expires     DateTime?
+  accessToken String
+  userId      BigInt?
+  firstName   String?
+  lastName    String?
+  email       String?
+  accountOwner Boolean  @default(false)
+  locale      String?
+  collaborator Boolean? @default(false)
+  emailVerified Boolean? @default(false)
+}
+
+// Tracks which products have AR try-on enabled
+model TryOnProduct {
+  id              String   @id @default(cuid())
+  shop            String
+  shopifyProductId String
+  productTitle    String
+  category        String   // glasses | hat | jewelry | watch
+  arEmoji         String   // fallback emoji overlay
+  arModelUrl      String?  // future: GLTF 3D model URL
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  analytics TryOnAnalytic[]
+
+  @@unique([shop, shopifyProductId])
+  @@index([shop])
+}
+
+// Analytics: every time a customer tries on a product
+model TryOnAnalytic {
+  id        String   @id @default(cuid())
+  shop      String
+  productId String
+  product   TryOnProduct @relation(fields: [productId], references: [id])
+  sessionId String   // anonymous visitor session
+  addedToCart Boolean @default(false)
+  purchased   Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([shop])
+  @@index([productId])
+}
+
+// Per-shop settings
+model ShopSettings {
+  id          String  @id @default(cuid())
+  shop        String  @unique
+  plan        String  @default("free") // free | growth | pro | enterprise
+  buttonText  String  @default("Try On")
+  buttonColor String  @default("#1e5c40")
+  theme       String  @default("light")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
