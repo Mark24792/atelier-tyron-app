@@ -1,6 +1,7 @@
 {
   "name": "atelier-tryon",
   "private": true,
+  "type": "module",
   "version": "1.0.0",
   "description": "AI Virtual Try-On App for Shopify — Atelier",
   "scripts": {
