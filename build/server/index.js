@@ -205,16 +205,19 @@ const route1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   loader: loader$8
 }, Symbol.toStringTag, { value: "Module" }));
 const loader$7 = async ({ request }) => {
-  const url = new URL(request.url);
-  const exitIframe = url.searchParams.get("exitIframe");
+  const { searchParams } = new URL(request.url);
+  const shop = searchParams.get("shop");
+  const host = searchParams.get("host");
+  const exitIframe = searchParams.get("exitIframe");
   if (exitIframe) {
+    const destination = new URL(exitIframe, `https://${shop}`);
+    if (host) destination.searchParams.set("host", host);
     return new Response(null, {
       status: 302,
-      headers: { Location: exitIframe }
+      headers: { Location: destination.toString() }
     });
   }
-  await authenticate.admin(request);
-  return null;
+  return new Response(null, { status: 200 });
 };
 const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,

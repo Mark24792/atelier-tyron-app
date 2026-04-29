@@ -1,15 +1,19 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
-  const exitIframe = url.searchParams.get("exitIframe");
+  const { searchParams } = new URL(request.url);
+  const shop = searchParams.get("shop");
+  const host = searchParams.get("host");
+  const exitIframe = searchParams.get("exitIframe");
+
   if (exitIframe) {
+    const destination = new URL(exitIframe, `https://${shop}`);
+    if (host) destination.searchParams.set("host", host);
     return new Response(null, {
       status: 302,
-      headers: { Location: exitIframe },
+      headers: { Location: destination.toString() },
     });
   }
-  await authenticate.admin(request);
-  return null;
+
+  return new Response(null, { status: 200 });
 };
