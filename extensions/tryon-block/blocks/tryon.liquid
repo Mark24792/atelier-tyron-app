@@ -1,0 +1,222 @@
+{% comment %}
+  extensions/tryon-block/blocks/tryon.liquid
+  Shopify Theme App Extension Block
+  — Injected directly onto product pages via the Theme Editor
+{% endcomment %}
+
+{% assign product_gid = product.id | prepend: 'gid://shopify/Product/' %}
+
+<div
+  id="atelier-tryon-root"
+  data-product-id="{{ product_gid }}"
+  data-shop="{{ shop.permanent_domain }}"
+  data-app-url="{{ block.settings.app_url }}"
+  style="margin: 12px 0;"
+>
+  {%- comment %} Placeholder shown before JS initialises {%- endcomment %}
+  <div id="atelier-placeholder">
+    <button
+      id="atelier-btn-placeholder"
+      style="
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 24px;
+        background: {{ block.settings.button_color | default: '#1e5c40' }};
+        color: #fff;
+        border: none;
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        font-family: inherit;
+        opacity: 0.6;
+      "
+    >
+      <span>⏳</span> Loading Try‑On…
+    </button>
+  </div>
+
+  {%- comment %} AR modal (hidden until opened) {%- endcomment %}
+  <div id="atelier-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.6); align-items:center; justify-content:center;">
+    <div style="background:#f8f4ee; width:min(480px,95vw); max-height:90vh; overflow:hidden; position:relative; box-shadow:0 24px 60px rgba(0,0,0,.3);">
+      {%- comment %} Modal header {%- endcomment %}
+      <div style="padding:14px 18px; border-bottom:1px solid rgba(30,92,64,.13); display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-family:'Cormorant Garamond',Georgia,serif; font-size:18px; letter-spacing:.12em; color:#1e5c40;">At<em>e</em>lier Try‑On</span>
+        <button id="atelier-close" style="background:none;border:none;cursor:pointer;font-size:18px;color:#8a8070;">✕</button>
+      </div>
+      {%- comment %} Camera area {%- endcomment %}
+      <div style="position:relative; height:360px; background:#f2ede4; overflow:hidden;">
+        <video id="atelier-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);"></video>
+        <canvas id="atelier-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+        <div id="atelier-start-overlay" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#f2ede4;">
+          <div style="font-size:36px;opacity:.5">🪞</div>
+          <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;color:#1a1814;letter-spacing:.08em;">Virtual Try‑On</div>
+          <p style="font-size:11px;color:#8a8070;text-align:center;max-width:200px;line-height:1.6;">Allow camera access to try this on in real time</p>
+          <button id="atelier-cam-start" style="padding:9px 24px;background:#1e5c40;color:#f8f4ee;border:none;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;">Activate Camera</button>
+        </div>
+        <div id="atelier-cam-label" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(248,244,238,.85);border:1px solid rgba(30,92,64,.15);padding:4px 12px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8a8070;white-space:nowrap;">
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#c0504a;margin-right:5px;animation:atRec 1.4s ease-in-out infinite;"></span>AR Active
+        </div>
+      </div>
+      {%- comment %} Add to cart bar {%- endcomment %}
+      <div style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;background:#f5f0e8;border-top:1px solid rgba(30,92,64,.1);">
+        <span style="font-size:11px;color:#8a8070;">{{ product.title }}</span>
+        <button id="atelier-add-cart"
+          style="padding:8px 20px;background:#1e5c40;color:#f8f4ee;border:none;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;"
+          onclick="atelierAddToCart('{{ product.variants.first.id }}')"
+        >
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes atRec { 0%,100%{opacity:1} 50%{opacity:.2} }
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap');
+</style>
+
+<script>
+(function() {
+  const root = document.getElementById('atelier-tryon-root');
+  const shop = root.dataset.shop;
+  const productId = root.dataset.productId;
+  const appUrl = root.dataset.appUrl;
+  const sessionId = Math.random().toString(36).slice(2);
+
+  // Fetch config from our app API
+  fetch(`${appUrl}/api/tryon?shop=${shop}&productId=${encodeURIComponent(productId)}`)
+    .then(r => r.json())
+    .then(cfg => {
+      if (!cfg.enabled) { root.style.display = 'none'; return; }
+      initButton(cfg);
+    })
+    .catch(() => { root.style.display = 'none'; });
+
+  function initButton(cfg) {
+    const ph = document.getElementById('atelier-placeholder');
+    ph.innerHTML = `
+      <button id="atelier-open-btn" style="
+        display:inline-flex;align-items:center;gap:8px;
+        padding:10px 24px;
+        background:${cfg.buttonColor};color:#fff;border:none;
+        font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+        cursor:pointer;font-family:inherit;transition:opacity .2s;
+      ">
+        <span>🪞</span> ${cfg.buttonText}
+      </button>`;
+    document.getElementById('atelier-open-btn').onclick = () => openModal(cfg);
+  }
+
+  function openModal(cfg) {
+    const modal = document.getElementById('atelier-modal');
+    modal.style.display = 'flex';
+
+    // Track try-on start
+    fetch(`${appUrl}/api/tryon`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'tryon_start', shop, productId, sessionId }),
+    }).catch(() => {});
+
+    document.getElementById('atelier-close').onclick = () => {
+      modal.style.display = 'none';
+      stopCamera();
+    };
+    document.getElementById('atelier-cam-start').onclick = () => startCamera(cfg);
+  }
+
+  let stream = null;
+  function startCamera(cfg) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      .then(s => {
+        stream = s;
+        const video = document.getElementById('atelier-video');
+        video.srcObject = s;
+        video.play();
+        document.getElementById('atelier-start-overlay').style.display = 'none';
+        document.getElementById('atelier-cam-label').style.display = 'block';
+        startARLoop(cfg);
+      })
+      .catch(() => alert('Camera access denied. Please allow camera access to use Try-On.'));
+  }
+
+  function stopCamera() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  }
+
+  function startARLoop(cfg) {
+    const video = document.getElementById('atelier-video');
+    const canvas = document.getElementById('atelier-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function loop() {
+      if (!stream) return;
+      canvas.width = video.videoWidth || 480;
+      canvas.height = video.videoHeight || 360;
+      const w = canvas.width, h = canvas.height;
+      const cx = w / 2, cy = h * 0.42;
+      const emoji = cfg.arEmoji || '👓';
+      const size = w * 0.35;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = `${size}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,.2)';
+      ctx.shadowBlur = 10;
+      ctx.fillText(emoji, cx, cy - h * 0.04);
+
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  window.atelierAddToCart = function(variantId) {
+    fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: variantId, quantity: 1 }),
+    })
+    .then(() => {
+      fetch(`${appUrl}/api/tryon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'add_to_cart', shop, productId, sessionId }),
+      }).catch(() => {});
+      document.getElementById('atelier-modal').style.display = 'none';
+      stopCamera();
+      alert('Added to cart!');
+    });
+  };
+})();
+</script>
+
+{% schema %}
+{
+  "name": "AR Try-On",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "app_url",
+      "label": "App URL",
+      "default": "https://your-app-url.com"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button Colour",
+      "default": "#1e5c40"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Try On"
+    }
+  ]
+}
+{% endschema %}
