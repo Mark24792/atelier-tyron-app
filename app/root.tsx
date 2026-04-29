@@ -51,6 +51,8 @@ export default function App() {
   );
 }
 
+import { useRouteError } from "@remix-run/react";
+
 export function ErrorBoundary() {
   return boundary.error(useRouteError());
 }
