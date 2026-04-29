@@ -19,7 +19,7 @@ export const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   sessionStorage: new PrismaSessionStorage(db),
   future: {
-    unstable_newEmbeddedAuthStrategy: true,
+    unstable_newEmbeddedAuthStrategy: false,
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
