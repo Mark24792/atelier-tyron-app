@@ -2,6 +2,7 @@
   "name": "atelier-tryon",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "description": "AI Virtual Try-On App for Shopify — Atelier",
   "scripts": {
     "build": "remix vite:build",
