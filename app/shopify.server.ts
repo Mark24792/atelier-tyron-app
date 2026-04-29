@@ -1,4 +1,3 @@
-// app/shopify.server.ts
 import "@shopify/shopify-app-remix/adapters/node";
 import {
   ApiVersion,
@@ -18,12 +17,7 @@ export const shopify = shopifyApp({
   authPathPrefix: "/auth",
   distribution: AppDistribution.AppStore,
   sessionStorage: new PrismaSessionStorage(db),
-  future: {
-    unstable_newEmbeddedAuthStrategy: false,
-  },
-  ...(process.env.SHOP_CUSTOM_DOMAIN
-    ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
-    : {}),
+  future: {},
 });
 
 export default shopify;
