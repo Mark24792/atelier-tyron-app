@@ -17,11 +17,9 @@ export const shopify = shopifyApp({
   authPathPrefix: "/auth",
   distribution: AppDistribution.AppStore,
   sessionStorage: new PrismaSessionStorage(db),
-  future: {},
-cookieOptions: {
-  sameSite: "none",
-  secure: true,
-},
+  future: {
+    unstable_newEmbeddedAuthStrategy: true,
+  },
   hooks: {
     afterAuth: async ({ session }) => {
       shopify.registerWebhooks({ session });
