@@ -1,10 +1,10 @@
-// app/root.tsx
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteError,
 } from "@remix-run/react";
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { boundary } from "@shopify/shopify-app-remix/server";
@@ -50,8 +50,6 @@ export default function App() {
     </html>
   );
 }
-
-import { useRouteError } from "@remix-run/react";
 
 export function ErrorBoundary() {
   return boundary.error(useRouteError());
